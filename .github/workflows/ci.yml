@@ -1,0 +1,91 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: concierge
+          POSTGRES_PASSWORD: concierge
+          POSTGRES_DB: concierge_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U concierge" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      TEST_OWNER_URL: postgresql+psycopg://concierge:concierge@localhost:5432/concierge_test
+      TEST_APP_URL: postgresql+psycopg://concierge_app:app@localhost:5432/concierge_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -e 'services/api[dev]' pip-audit
+      - run: ruff check services/api
+      - run: ruff format --check services/api
+      - run: mypy services/api/src
+      - run: pytest services/api/tests -q
+      - name: Migration up/down on a clean database
+        working-directory: services/api
+        env:
+          MIGRATION_DATABASE_URL: postgresql+psycopg://concierge:concierge@localhost:5432/postgres
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+      - run: pip-audit --skip-editable
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  codeql:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, security-events: write}
+    strategy:
+      matrix: {language: [python, javascript-typescript]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: {languages: "${{ matrix.language }}"}
+      - uses: github/codeql-action/analyze@v3
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t voiceup-api services/api
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: voiceup-api
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
