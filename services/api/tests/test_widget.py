@@ -1,5 +1,7 @@
 """Visitor flow: session start, origin enforcement, messages, isolation."""
 
+from collections.abc import Iterator
+
 import jwt
 import pytest
 from conftest import auth
@@ -8,9 +10,25 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from concierge.config import get_settings
+from concierge.main import app
+from concierge.responder import Answer, get_responder
 from concierge.widget_api import reset_limiters
 
 SITE = "http://localhost:8080"
+
+
+class EchoResponder:
+    """Keeps these tests about sessions and origins, not answer quality."""
+
+    def reply(self, *, visitor_text: str, **_: object) -> Answer:
+        return Answer(f"echo: {visitor_text}")
+
+
+@pytest.fixture(autouse=True)
+def echo_responder() -> Iterator[None]:
+    app.dependency_overrides[get_responder] = lambda: EchoResponder()
+    yield
+    app.dependency_overrides.pop(get_responder, None)
 
 
 def make_agent(client: TestClient, tenant: str = "a", publish: bool = True) -> str:

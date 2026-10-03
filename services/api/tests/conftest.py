@@ -20,6 +20,7 @@ os.environ.update(
     DATABASE_URL=APP_URL,
     DEV_AUTH_ENABLED="true",
     DEV_AUTH_SECRET="test-secret",  # noqa: S105 - test fixture only
+    OUTBOX_WORKER_ENABLED="false",
 )
 
 import pytest

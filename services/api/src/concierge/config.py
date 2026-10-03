@@ -34,6 +34,28 @@ class Settings(BaseSettings):
     allow_manual_domain_verification: bool = True
     widget_rate_per_minute: int = 30
 
+    # Serve /api/v1/agents, organisations and domains. A public demo can switch these off and
+    # be configured with the CLI instead, which also removes the need for an identity provider.
+    admin_api_enabled: bool = True
+    widget_js_path: str = "static/widget.js"
+    privacy_url: str | None = None
+
+    # Grounded answers
+    anthropic_api_key: str | None = None
+    llm_model: str = "claude-haiku-4-5-20251001"
+    daily_ai_message_cap: int = 300
+
+    # Email
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_use_ssl: bool = False
+    smtp_starttls: bool = True
+    mail_from: str = "Site Assistant <no-reply@localhost>"
+    outbox_worker_enabled: bool = True
+    outbox_interval_seconds: int = 20
+
     @model_validator(mode="after")
     def validate_auth(self) -> "Settings":
         if self.app_env in {"staging", "production"}:
