@@ -1,0 +1,53 @@
+# FutureTec demo server. Run from this folder:  docker compose -f docker-compose.prod.yml up -d --build
+name: voiceup
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: concierge
+      POSTGRES_USER: concierge
+      POSTGRES_PASSWORD: ${OWNER_DB_PASSWORD:?set OWNER_DB_PASSWORD in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U concierge -d concierge"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+psycopg://concierge:${OWNER_DB_PASSWORD}@postgres:5432/concierge
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  api:
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    image: voiceup
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://concierge_app:${APP_DB_PASSWORD}@postgres:5432/concierge
+      MIGRATION_DATABASE_URL: postgresql+psycopg://concierge:${OWNER_DB_PASSWORD}@postgres:5432/concierge
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  caddy_data:

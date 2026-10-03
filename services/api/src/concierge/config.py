@@ -65,8 +65,11 @@ class Settings(BaseSettings):
                 raise ValueError("ALLOW_MANUAL_DOMAIN_VERIFICATION must be false in production")
             if self.widget_signing_key.startswith("dev-only") or len(self.widget_signing_key) < 32:
                 raise ValueError("WIDGET_SIGNING_KEY must be a strong secret in production")
-        if not self.dev_auth_enabled and not (
-            self.oidc_issuer and self.oidc_audience and self.oidc_jwks_url
+        # A demo run with the admin API switched off has no signed-in users, so no IdP is needed.
+        if (
+            self.admin_api_enabled
+            and not self.dev_auth_enabled
+            and not (self.oidc_issuer and self.oidc_audience and self.oidc_jwks_url)
         ):
             raise ValueError("OIDC_ISSUER, OIDC_AUDIENCE and OIDC_JWKS_URL are required")
         return self

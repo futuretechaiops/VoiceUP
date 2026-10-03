@@ -2,7 +2,7 @@
 
 This guide gets the AI Sales Concierge running on your own computer and shows the chat widget working on a pretend customer website. It takes about 30 minutes the first time, most of it installing tools.
 
-**What you will see:** a demo website for "Demo Estates" with a round button in the corner. Clicking it opens a chat. The replies are clearly labelled **test replies**: the real AI answers arrive in a later phase. What you are proving is the plumbing: the embed, the security checks and the saved conversations.
+**What you will see:** a demo website for "Demo Estates" with a round button in the corner. Clicking it opens a chat. The demo company has two small built-in pages, so you can ask "What are your tenant fees?" and see an answer with a source link, then try the call-back form. Without an AI key the answer quotes the matching page; to put this on a real website, follow `docs/FUTURETEC_GO_LIVE.md`.
 
 ## 1. Install four free tools (once)
 
