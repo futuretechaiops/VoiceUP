@@ -18,6 +18,7 @@ class AgentRead(BaseModel):
     role_description: str
     primary_objective: str
     status: str
+    public_id: str
     created_at: datetime
     updated_at: datetime
 

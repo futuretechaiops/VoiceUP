@@ -60,7 +60,10 @@ def seeded(owner_engine: Engine) -> Engine:
         # Replica role skips the append-only triggers so tests can reset state.
         conn.execute(text("SET session_replication_role = replica"))
         conn.execute(
-            text("TRUNCATE tenants, users, memberships, agents, audit_events, invitations CASCADE")
+            text(
+                "TRUNCATE tenants, users, memberships, agents, audit_events, invitations, domains, "
+                "conversations, messages CASCADE"
+            )
         )
         conn.execute(text("SET session_replication_role = DEFAULT"))
         conn.execute(
@@ -103,6 +106,10 @@ def app_engine(seeded: Engine) -> Iterator[Engine]:
 
 @pytest.fixture
 def client(seeded: Engine) -> Iterator[TestClient]:
+    from concierge.config import get_settings
+    from concierge.widget_api import reset_limiters
+
+    reset_limiters(get_settings())
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 

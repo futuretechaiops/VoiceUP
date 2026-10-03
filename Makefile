@@ -1,4 +1,4 @@
-.PHONY: install db migrate dev-api test-api lint-api typecheck build
+.PHONY: install db migrate seed-demo demo-site dev-api test-api lint-api typecheck build
 
 install:
 	npm install
@@ -10,6 +10,15 @@ db:
 
 migrate:
 	cd services/api && ../../.venv/bin/alembic upgrade head
+
+seed-demo:
+	cd services/api && ../../.venv/bin/python -m concierge.cli seed-demo
+
+# Serves a pretend customer website on http://localhost:8080 with the widget embedded.
+demo-site:
+	npm run build:embed --workspace @concierge/widget
+	cp apps/widget/dist-embed/widget.js apps/widget/test-site/widget.js
+	cd apps/widget/test-site && python3 -m http.server 8080
 
 dev-api:
 	.venv/bin/uvicorn concierge.main:app --app-dir services/api/src --reload --port 8000

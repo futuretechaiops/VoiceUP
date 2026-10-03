@@ -16,3 +16,5 @@ dist/
 htmlcov/
 node_modules/
 !.env.example
+apps/widget/dist-embed/
+apps/widget/test-site/widget.js

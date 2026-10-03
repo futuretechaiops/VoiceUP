@@ -7,12 +7,15 @@ UK-first, multi-tenant AI sales concierge: a website widget (voice and text) tha
 | Area | State |
 | --- | --- |
 | Monorepo, CI, ADRs | Done (CI: lint, types, tests on PostgreSQL, migration up/down, secret scan, CodeQL, dependency and container scans) |
-| Tenancy and RBAC | Done: row-level security as an unprivileged role, fail-closed, 42 tests on real PostgreSQL |
+| Tenancy and RBAC | Done: row-level security as an unprivileged role, fail-closed, 71 tests on real PostgreSQL |
 | Identity | OIDC verification and membership-based tenant and role resolution; development adapter for local use |
 | Organisations | Members list, role change (last-admin protected), invitation creation, audit events (append-only) |
-| Not yet built | Invitation acceptance, agent versioning (WP2), knowledge ingestion (WP3), conversation, voice, widget logic, leads, calendars, billing |
+| Widget (text) | Embeddable widget, approved-domain origin checks, signed session tokens, saved conversations, labelled placeholder replies, demo site and browser test |
+| Not yet built | Invitation acceptance, agent versioning (WP2), knowledge ingestion (WP3), real AI answers (WP4), voice, leads, calendars, billing |
 
 Next work package: agent versions and publishing (WP2), then secure knowledge ingestion (WP3). The phased plan lives with the specification's section 17.
+
+**New to this? Start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**: step-by-step, no coding or Git knowledge needed, ending with the widget working on a demo website.
 
 ## Quick start
 

@@ -7,13 +7,13 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from . import organisations
+from . import domains, organisations, widget_api
 from .audit import record_audit
 from .auth import Principal, PrincipalDep, require_roles
 from .config import get_settings
 from .db import get_db
 from .logging_config import configure_logging
-from .models import Agent, Role
+from .models import Agent, Role, utcnow
 from .problems import install_problem_handlers
 from .schemas import AgentCreate, AgentPage, AgentRead, MeRead
 from .tenancy import TenantDbDep
@@ -29,6 +29,8 @@ app = FastAPI(
 )
 install_problem_handlers(app)
 app.include_router(organisations.router)
+app.include_router(domains.router)
+app.include_router(widget_api.router)
 
 DbDep = Annotated[Session, Depends(get_db)]
 AdminPrincipal = Annotated[
@@ -109,6 +111,22 @@ def create_agent(payload: AgentCreate, principal: AdminPrincipal, db: TenantDbDe
     record_audit(db, principal, "agent.created", "agent", agent.id)
     db.commit()
     db.refresh(agent)  # new transaction: tenant context is re-applied by the session hook
+    return agent
+
+
+@app.post("/api/v1/agents/{agent_id}/publish", response_model=AgentRead, tags=["agents"])
+def publish_agent(agent_id: str, principal: AdminPrincipal, db: TenantDbDep) -> Agent:
+    # Immutable versions arrive in WP2; for now publishing marks the agent live for the widget.
+    agent = db.scalar(
+        select(Agent).where(Agent.id == agent_id, Agent.tenant_id == principal.tenant_id)
+    )
+    if agent is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Agent not found")
+    agent.status = "published"
+    agent.published_at = utcnow()
+    record_audit(db, principal, "agent.published", "agent", agent.id)
+    db.commit()
+    db.refresh(agent)
     return agent
 
 

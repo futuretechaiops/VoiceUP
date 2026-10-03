@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:embed": "vite build --config vite.embed.config.ts"
   },
-  "devDependencies": {"typescript":"^5.9.0","vite":"^7.1.0"}
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
 }
-
